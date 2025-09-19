@@ -334,7 +334,7 @@
     <div class="controls-container">
         <h3>Controls</h3>
         <button id="restartBtn">Restart Playback</button>
-        <button id="resetBtn">Reset</button>
+        <button id="editBtn">Edit</button>
         <div class="rpm-control">
             <p>RPM: <span id="rpmDisplay"></span></p>
             <div class="rpm-buttons">
@@ -384,7 +384,7 @@
         const songTitleEl = document.querySelector('.song-title');
         const songSingerEl = document.querySelector('.song-singer');
         const restartBtn = document.getElementById('restartBtn');
-        const resetBtn = document.getElementById('resetBtn');
+        const editBtn = document.getElementById('editBtn'); // Updated ID
         const rpmDisplay = document.getElementById('rpmDisplay');
         const rpmUpBtn = document.getElementById('rpmUpBtn');
         const rpmDownBtn = document.getElementById('rpmDownBtn');
@@ -561,21 +561,30 @@
             setRpm(currentRpm - 1);
         });
 
-        resetBtn.addEventListener('click', () => {
+        editBtn.addEventListener('click', () => { // Updated listener
             // Stop any ongoing animation
             if (animationFrameId) {
                 cancelAnimationFrame(animationFrameId);
                 isPlaying = false;
             }
+
+            // Populate form with current data
+            colorPicker.value = config.background_color || '#121212';
+            titleInput.value = config.title || '';
+            artistInput.value = config.singer || '';
+            lyricsTextarea.value = lyricsContent || '';
+            if (config.cover_path && config.cover_path.length > 0) {
+                coverPreview.src = config.cover_path;
+                coverPreview.style.display = 'block';
+            } else {
+                coverPreview.style.display = 'none';
+            }
+
+
             // Add scroll class and show start page
             document.body.classList.add('scrollable');
             startPage.style.display = 'flex';
             document.body.classList.remove('player-active');
-            rotationAngle = 0;
-            coverImage.style.transform = 'rotate(0deg)';
-            coverImage.classList.remove('grayscale');
-            lyricsContainer.style.transform = 'translateY(0)';
-            document.querySelectorAll('.lyrics li').forEach(li => li.classList.remove('highlight'));
         });
 
         // --- Event Listeners for Start Page / Modal ---
