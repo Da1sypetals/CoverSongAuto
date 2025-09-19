@@ -7,6 +7,10 @@
 ## 歌词
 1. 把歌词复制到 lrc generator, 自己打一遍，生成 lrc 格式（实测比去音乐网站爬取效率高）
 2. lrc 格式歌词、封面图、其他元信息，复制到视频生成页面中，开启视频，录屏。
+3. 用以下命令把视频从 mkv 格式转为 mp4 格式。ffmpeg 会根据extension自动猜测文件格式，所以extension一定要写对。
+```
+ffmpeg -i <source_video.mkv> -c copy <destination_video.mp4>
+```
 
 ## 封面
 用即梦AI https://jimeng.jianying.com/ai-tool/home ，把YOUR_SONG_TITLE换成歌曲名，然后用这一段prompt生成多个图。
