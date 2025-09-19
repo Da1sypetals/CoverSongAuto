@@ -2,9 +2,7 @@
 <html lang="zh-CN">
 
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>歌词与唱片播放器</title>
     <style>
@@ -119,14 +117,20 @@
 
         .song-title {
             font-size: 3em;
-            margin: 0.5em 0;
+            margin: 0.5em 0 0.1em;
             font-weight: bold;
         }
 
-        .song-singer {
+        .song-singer,
+        .song-cover-artist {
             font-size: 1.5em;
-            margin: 0.25em 0 1em;
+            margin: 0.25em 0 0.1em;
             opacity: 0.8;
+        }
+
+        /* Add a margin below the new element */
+        .song-cover-artist {
+            margin-bottom: 1em;
         }
 
         /* New wrapper to prevent lyrics overlap */
@@ -320,6 +324,7 @@
         <div class="lyrics-container">
             <h2 class="song-title"></h2>
             <p class="song-singer"></p>
+            <p class="song-cover-artist"></p>
             <div class="lyrics-wrapper">
                 <ul class="lyrics"></ul>
             </div>
@@ -368,6 +373,10 @@
                 <input type="text" id="artistInput" placeholder="Enter artist name">
             </div>
             <div class="form-group">
+                <label for="coverArtistInput">Cover Artist:</label>
+                <input type="text" id="coverArtistInput" placeholder="Enter cover artist name">
+            </div>
+            <div class="form-group">
                 <label for="lyricsTextarea">Paste LRC Lyrics:</label>
                 <textarea id="lyricsTextarea"
                     placeholder="[00:00.00]Lyric line 1&#10;[00:05.12]Lyric line 2"></textarea>
@@ -377,12 +386,15 @@
     </div>
 
 
+
     <script>
         const lyricsWrapper = document.querySelector('.lyrics-wrapper');
         const lyricsContainer = document.querySelector('.lyrics');
         const coverImage = document.querySelector('.cover-image');
         const songTitleEl = document.querySelector('.song-title');
         const songSingerEl = document.querySelector('.song-singer');
+        // 🎶 获取新的翻唱者元素
+        const songCoverArtistEl = document.querySelector('.song-cover-artist');
         const restartBtn = document.getElementById('restartBtn');
         const editBtn = document.getElementById('editBtn'); // Updated ID
         const rpmDisplay = document.getElementById('rpmDisplay');
@@ -398,6 +410,8 @@
         const coverPreview = document.getElementById('coverPreview');
         const titleInput = document.getElementById('titleInput');
         const artistInput = document.getElementById('artistInput');
+        // 🎶 获取新的翻唱者输入框
+        const coverArtistInput = document.getElementById('coverArtistInput');
         const lyricsTextarea = document.getElementById('lyricsTextarea');
 
         let config = {};
@@ -538,6 +552,8 @@
             }
             songTitleEl.textContent = config.title;
             songSingerEl.textContent = config.singer;
+            // 🎶 显示翻唱者信息，如果存在的话
+            songCoverArtistEl.textContent = config.cover_artist ? `Cover by: ${config.cover_artist}` : '';
             setRpm(config.cd_spin_rpm);
 
             // Parse and render lyrics
@@ -572,6 +588,8 @@
             colorPicker.value = config.background_color || '#121212';
             titleInput.value = config.title || '';
             artistInput.value = config.singer || '';
+            // 🎶 填充翻唱者输入框
+            coverArtistInput.value = config.cover_artist || '';
             lyricsTextarea.value = lyricsContent || '';
             if (config.cover_path && config.cover_path.length > 0) {
                 coverPreview.src = config.cover_path;
@@ -642,7 +660,9 @@
                 background_color: colorPicker.value,
                 cover_path: coverPreview.src,
                 singer: artistInput.value || 'Unknown Artist',
-                title: titleInput.value || 'Unknown Title'
+                title: titleInput.value || 'Unknown Title',
+                // 🎶 保存翻唱者信息到配置中
+                cover_artist: coverArtistInput.value || ''
             };
             lyricsContent = lyricsTextarea.value;
 
