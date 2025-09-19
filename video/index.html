@@ -2,7 +2,9 @@
 <html lang="zh-CN">
 
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>歌词与唱片播放器</title>
     <style>
@@ -20,22 +22,36 @@
             height: 100vh;
             margin: 36px;
             overflow: hidden;
+            /* Default to hidden for player page */
             transition: background 1s ease-in-out;
             gap: 20px;
         }
 
+        /* New CSS class to allow scrolling on the body */
+        body.scrollable {
+            overflow-y: auto;
+            align-items: flex-start;
+            height: auto;
+            padding: 36px;
+        }
+
         .container {
-            display: flex;
+            display: none;
             width: 90%;
             height: 80%;
             background-color: #1e1e1e;
             border-radius: 15px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
             padding: 20px;
+            gap: 20px;
+        }
+
+        body.player-active .container {
+            display: flex;
         }
 
         .controls-container {
-            display: flex;
+            display: none;
             flex-direction: column;
             justify-content: center;
             align-items: center;
@@ -47,6 +63,10 @@
             gap: 20px;
         }
 
+        body.player-active .controls-container {
+            display: flex;
+        }
+
         .controls-container button {
             width: 100%;
             padding: 10px;
@@ -55,9 +75,6 @@
             font-size: 1em;
             cursor: pointer;
             transition: transform 0.2s ease, background-color 0.2s ease;
-        }
-
-        .controls-container button {
             background-color: #4CAF50;
             color: white;
             font-weight: bold;
@@ -190,6 +207,111 @@
             transform: translate(-50%, -50%);
             border: 2px solid #555;
         }
+
+        /* Start Page / Modal */
+        .start-page {
+            position: relative;
+            /* Changed to relative to enable scrolling */
+            top: 0;
+            left: 0;
+            width: 100%;
+            min-height: 100vh;
+            /* Set a minimum height for scrolling */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            z-index: 100;
+            background: #121212;
+            /* Match background color */
+        }
+
+        .start-form {
+            background-color: #1e1e1e;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 600px;
+            margin: 50px 0;
+        }
+
+        .start-form h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .start-form label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .start-form input[type="text"],
+        .start-form textarea,
+        .start-form input[type="color"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            box-sizing: border-box;
+        }
+
+        .start-form textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .start-form input[type="file"] {
+            border: 1px dashed #555;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        #coverDropZone {
+            border: 2px dashed #555;
+            text-align: center;
+            padding: 20px;
+            transition: border-color 0.2s ease;
+        }
+
+        #coverDropZone.dragover {
+            border-color: #4CAF50;
+        }
+
+        .start-page-button {
+            width: 100%;
+            padding: 15px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        .start-page-button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        .cover-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #555;
+            display: block;
+            margin: 10px auto;
+        }
     </style>
 </head>
 
@@ -212,6 +334,7 @@
     <div class="controls-container">
         <h3>Controls</h3>
         <button id="restartBtn">Restart Playback</button>
+        <button id="resetBtn">Reset</button>
         <div class="rpm-control">
             <p>RPM: <span id="rpmDisplay"></span></p>
             <div class="rpm-buttons">
@@ -221,6 +344,39 @@
         </div>
     </div>
 
+    <div class="start-page" id="startPage">
+        <div class="start-form">
+            <h3>Configure Your Player</h3>
+            <div class="form-group">
+                <label for="colorPicker">Choose Theme Color:</label>
+                <input type="color" id="colorPicker" value="#121212">
+            </div>
+            <div class="form-group">
+                <label for="coverInput">Choose Cover Image:</label>
+                <div id="coverDropZone">
+                    <p>Drag & Drop or Click to Upload</p>
+                    <input type="file" id="coverInput" accept="image/*" style="display: none;">
+                    <img id="coverPreview" class="cover-preview" style="display: none;">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="titleInput">Song Title:</label>
+                <input type="text" id="titleInput" placeholder="Enter song title">
+            </div>
+            <div class="form-group">
+                <label for="artistInput">Artist Name:</label>
+                <input type="text" id="artistInput" placeholder="Enter artist name">
+            </div>
+            <div class="form-group">
+                <label for="lyricsTextarea">Paste LRC Lyrics:</label>
+                <textarea id="lyricsTextarea"
+                    placeholder="[00:00.00]Lyric line 1&#10;[00:05.12]Lyric line 2"></textarea>
+            </div>
+            <button class="start-page-button" id="startPlaybackBtn">Start Playback</button>
+        </div>
+    </div>
+
+
     <script>
         const lyricsWrapper = document.querySelector('.lyrics-wrapper');
         const lyricsContainer = document.querySelector('.lyrics');
@@ -228,11 +384,24 @@
         const songTitleEl = document.querySelector('.song-title');
         const songSingerEl = document.querySelector('.song-singer');
         const restartBtn = document.getElementById('restartBtn');
+        const resetBtn = document.getElementById('resetBtn');
         const rpmDisplay = document.getElementById('rpmDisplay');
         const rpmUpBtn = document.getElementById('rpmUpBtn');
         const rpmDownBtn = document.getElementById('rpmDownBtn');
 
+        // Start Page Elements
+        const startPage = document.getElementById('startPage');
+        const startPlaybackBtn = document.getElementById('startPlaybackBtn');
+        const colorPicker = document.getElementById('colorPicker');
+        const coverInput = document.getElementById('coverInput');
+        const coverDropZone = document.getElementById('coverDropZone');
+        const coverPreview = document.getElementById('coverPreview');
+        const titleInput = document.getElementById('titleInput');
+        const artistInput = document.getElementById('artistInput');
+        const lyricsTextarea = document.getElementById('lyricsTextarea');
+
         let config = {};
+        let lyricsContent = '';
         let rotationDegreesPerSecond = 0;
         let rotationAngle = 0;
         let startTime = null;
@@ -240,32 +409,7 @@
         let animationFrameId = null;
         let lyrics = [];
         let isPlaying = false;
-        let currentRpm = 10; // Initial RPM value
-
-        async function loadConfig() {
-            try {
-                const response = await fetch('config.json');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                config = await response.json();
-            } catch (error) {
-                console.error("Failed to load or parse config.json: ", error);
-                config = {
-                    cd_spin_rpm: 10,
-                    background_color: '#121212',
-                    lrc_path: 'lyrics.lrc',
-                    cover_path: 'cover.jpg',
-                    singer: 'Unknown Artist',
-                    title: 'Unknown Title'
-                };
-            }
-            document.documentElement.style.setProperty('--bg-color', config.background_color);
-            coverImage.src = config.cover_path;
-            songTitleEl.textContent = config.title;
-            songSingerEl.textContent = config.singer;
-            setRpm(config.cd_spin_rpm);
-        }
+        let currentRpm = 5; // Initial RPM value
 
         function setRpm(rpm) {
             currentRpm = Math.max(1, Math.min(20, rpm)); // Constrain RPM to [1, 20]
@@ -274,24 +418,12 @@
             rpmDisplay.textContent = currentRpm;
         }
 
-        async function fetchLyrics() {
-            try {
-                const response = await fetch(config.lrc_path);
-                const text = await response.text();
-                return parseLRC(text);
-            } catch (error) {
-                console.error("无法读取歌词文件: ", error);
-                return [];
-            }
-        }
-
         function parseLRC(lrcText) {
             const lines = lrcText.split('\n');
             const parsedLyrics = [];
             let firstTime = null;
 
             lines.forEach(line => {
-                // Corrected regex to handle the beginning of the line
                 const parts = line.match(/^\[(\d{2}):(\d{2}\.\d{2,3})\](.*)/);
                 if (parts) {
                     const minutes = parseInt(parts[1], 10);
@@ -323,6 +455,7 @@
                 lyricsContainer.appendChild(li);
             });
         }
+
         function animate(timestamp) {
             if (!startTime) {
                 startTime = timestamp;
@@ -362,14 +495,12 @@
             }
 
             if (lyrics.length > 0 && elapsed >= lyrics[lyrics.length - 1].time) {
-                // If this is the first time we've hit the end of the song
                 if (isPlaying) {
                     isPlaying = false;
-                    // Stop spinning the plate and apply grayscale after 6 seconds
                     setTimeout(() => {
                         cancelAnimationFrame(animationFrameId);
                         coverImage.classList.add('grayscale');
-                        rotationDegreesPerSecond = 0; // Stop the rotation
+                        rotationDegreesPerSecond = 0;
                     }, 6000);
                 }
             }
@@ -391,11 +522,26 @@
             setTimeout(startPlayback, 1000);
         }
 
-        async function startPlayback() {
+        function startPlayback() {
             if (isPlaying) return;
             isPlaying = true;
-            await loadConfig();
-            lyrics = await fetchLyrics();
+
+            // Remove scroll class for player mode
+            document.body.classList.remove('scrollable');
+
+            // Apply configured values
+            document.documentElement.style.setProperty('--bg-color', config.background_color);
+            if (config.cover_path) {
+                coverImage.src = config.cover_path;
+            } else {
+                coverImage.src = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="; // A tiny transparent GIF
+            }
+            songTitleEl.textContent = config.title;
+            songSingerEl.textContent = config.singer;
+            setRpm(config.cd_spin_rpm);
+
+            // Parse and render lyrics
+            lyrics = parseLRC(lyricsContent);
             if (lyrics.length > 0) {
                 renderLyrics();
                 animationFrameId = requestAnimationFrame(animate);
@@ -404,6 +550,7 @@
             }
         }
 
+        // --- Event Listeners for Player Controls ---
         restartBtn.addEventListener('click', resetPlayback);
 
         rpmUpBtn.addEventListener('click', () => {
@@ -414,7 +561,97 @@
             setRpm(currentRpm - 1);
         });
 
-        window.onload = startPlayback;
+        resetBtn.addEventListener('click', () => {
+            // Stop any ongoing animation
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                isPlaying = false;
+            }
+            // Add scroll class and show start page
+            document.body.classList.add('scrollable');
+            startPage.style.display = 'flex';
+            document.body.classList.remove('player-active');
+            rotationAngle = 0;
+            coverImage.style.transform = 'rotate(0deg)';
+            coverImage.classList.remove('grayscale');
+            lyricsContainer.style.transform = 'translateY(0)';
+            document.querySelectorAll('.lyrics li').forEach(li => li.classList.remove('highlight'));
+        });
+
+        // --- Event Listeners for Start Page / Modal ---
+
+        // Handle file input click
+        coverDropZone.addEventListener('click', () => {
+            coverInput.click();
+        });
+
+        // Handle file input change
+        coverInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    coverPreview.src = event.target.result;
+                    coverPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle drag and drop for the cover image
+        coverDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            coverDropZone.classList.add('dragover');
+        });
+
+        coverDropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            coverDropZone.classList.remove('dragover');
+        });
+
+        coverDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            coverDropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    coverPreview.src = event.target.result;
+                    coverPreview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Handle Start Playback button click
+        startPlaybackBtn.addEventListener('click', () => {
+            config = {
+                cd_spin_rpm: 5,
+                background_color: colorPicker.value,
+                cover_path: coverPreview.src,
+                singer: artistInput.value || 'Unknown Artist',
+                title: titleInput.value || 'Unknown Title'
+            };
+            lyricsContent = lyricsTextarea.value;
+
+            // Hide the start page and show the player
+            startPage.style.display = 'none';
+            document.body.classList.add('player-active');
+            document.body.classList.remove('scrollable');
+
+            // Start the music player
+            startPlayback();
+        });
+
+        // Initial setup: show the start page and hide the player
+        window.onload = () => {
+            document.body.classList.add('scrollable'); // Add scroll class on initial load
+            document.body.classList.remove('player-active');
+            startPage.style.display = 'flex';
+        };
     </script>
 </body>
 
