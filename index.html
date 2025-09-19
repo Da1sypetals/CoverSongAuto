@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>歌词与唱片播放器</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+        }
+
+        body {
+            font-family: sans-serif;
+            background: var(--bg-color);
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 36px;
+            overflow: hidden;
+            transition: background 1s ease-in-out;
+            gap: 20px;
+        }
+
+        .container {
+            display: flex;
+            width: 90%;
+            height: 80%;
+            background-color: #1e1e1e;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            padding: 20px;
+        }
+
+        .controls-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background-color: #1e1e1e;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            width: 200px;
+            gap: 20px;
+        }
+
+        .controls-container button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        .controls-container button {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+
+        .controls-container button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        .rpm-control {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            align-items: center;
+        }
+
+        .rpm-buttons {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .rpm-buttons button {
+            flex: 1;
+        }
+
+        .rpm-display {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+
+        /* Left Lyrics Area */
+        .lyrics-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            position: relative;
+        }
+
+        .song-title {
+            font-size: 3em;
+            margin: 0.5em 0;
+            font-weight: bold;
+        }
+
+        .song-singer {
+            font-size: 1.5em;
+            margin: 0.25em 0 1em;
+            opacity: 0.8;
+        }
+
+        /* New wrapper to prevent lyrics overlap */
+        .lyrics-wrapper {
+            flex-grow: 1;
+            overflow: hidden;
+            padding: 20px;
+            position: relative;
+        }
+
+        .lyrics {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            transition: transform 0.5s ease-in-out;
+            will-change: transform;
+            position: relative;
+        }
+
+        .lyrics li {
+            padding: 10px 0;
+            font-size: 20px;
+            opacity: 0.6;
+            transition: opacity 0.5s ease, color 0.5s ease;
+        }
+
+        .lyrics li.highlight {
+            font-size: 24px;
+            color: #fff;
+            opacity: 1;
+            font-weight: bold;
+            transition: font-size 0.5s ease, color 0.5s ease, opacity 0.5s ease;
+        }
+
+        /* Right Cover Area */
+        .cover-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .record-plate {
+            width: 450px;
+            height: 450px;
+            background-color: #333;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            border: 10px solid #222;
+            position: relative;
+        }
+
+        .cover-image {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7);
+            transition: filter 1s ease-in-out;
+        }
+
+        .cover-image.grayscale {
+            filter: grayscale(100%);
+        }
+
+        .record-hole {
+            width: 30px;
+            height: 30px;
+            background-color: #222;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid #555;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="lyrics-container">
+            <h2 class="song-title"></h2>
+            <p class="song-singer"></p>
+            <div class="lyrics-wrapper">
+                <ul class="lyrics"></ul>
+            </div>
+        </div>
+        <div class="cover-container">
+            <div class="record-plate">
+                <img alt="Album Cover" class="cover-image">
+                <div class="record-hole"></div>
+            </div>
+        </div>
+    </div>
+    <div class="controls-container">
+        <h3>Controls</h3>
+        <button id="restartBtn">Restart Playback</button>
+        <div class="rpm-control">
+            <p>RPM: <span id="rpmDisplay"></span></p>
+            <div class="rpm-buttons">
+                <button id="rpmDownBtn">-</button>
+                <button id="rpmUpBtn">+</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const lyricsWrapper = document.querySelector('.lyrics-wrapper');
+        const lyricsContainer = document.querySelector('.lyrics');
+        const coverImage = document.querySelector('.cover-image');
+        const songTitleEl = document.querySelector('.song-title');
+        const songSingerEl = document.querySelector('.song-singer');
+        const restartBtn = document.getElementById('restartBtn');
+        const rpmDisplay = document.getElementById('rpmDisplay');
+        const rpmUpBtn = document.getElementById('rpmUpBtn');
+        const rpmDownBtn = document.getElementById('rpmDownBtn');
+
+        let config = {};
+        let rotationDegreesPerSecond = 0;
+        let rotationAngle = 0;
+        let startTime = null;
+        let lastTimestamp = 0;
+        let animationFrameId = null;
+        let lyrics = [];
+        let isPlaying = false;
+        let currentRpm = 10; // Initial RPM value
+
+        async function loadConfig() {
+            try {
+                const response = await fetch('config.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                config = await response.json();
+            } catch (error) {
+                console.error("Failed to load or parse config.json: ", error);
+                config = {
+                    cd_spin_rpm: 10,
+                    background_color: '#121212',
+                    lrc_path: 'lyrics.lrc',
+                    cover_path: 'cover.jpg',
+                    singer: 'Unknown Artist',
+                    title: 'Unknown Title'
+                };
+            }
+            document.documentElement.style.setProperty('--bg-color', config.background_color);
+            coverImage.src = config.cover_path;
+            songTitleEl.textContent = config.title;
+            songSingerEl.textContent = config.singer;
+            setRpm(config.cd_spin_rpm);
+        }
+
+        function setRpm(rpm) {
+            currentRpm = Math.max(1, Math.min(20, rpm)); // Constrain RPM to [1, 20]
+            const duration = 60 / currentRpm;
+            rotationDegreesPerSecond = 360 / duration;
+            rpmDisplay.textContent = currentRpm;
+        }
+
+        async function fetchLyrics() {
+            try {
+                const response = await fetch(config.lrc_path);
+                const text = await response.text();
+                return parseLRC(text);
+            } catch (error) {
+                console.error("无法读取歌词文件: ", error);
+                return [];
+            }
+        }
+
+        function parseLRC(lrcText) {
+            const lines = lrcText.split('\n');
+            const parsedLyrics = [];
+            let firstTime = null;
+
+            lines.forEach(line => {
+                const parts = line.match(/^\[(\d{2}):(\d{2}\.\d{2})\](.*)/);
+                if (parts) {
+                    const minutes = parseInt(parts[1], 10);
+                    const seconds = parseFloat(parts[2]);
+                    const timeInSeconds = minutes * 60 + seconds;
+                    const text = parts[3].trim();
+
+                    if (!firstTime) {
+                        firstTime = timeInSeconds;
+                    }
+
+                    const relativeTime = timeInSeconds - firstTime;
+                    parsedLyrics.push({
+                        time: relativeTime,
+                        text: text
+                    });
+                }
+            });
+
+            return parsedLyrics;
+        }
+
+        function renderLyrics() {
+            lyricsContainer.innerHTML = '';
+            lyrics.forEach(line => {
+                const li = document.createElement('li');
+                li.textContent = line.text;
+                li.dataset.time = line.time;
+                lyricsContainer.appendChild(li);
+            });
+        }
+
+        function animate(timestamp) {
+            if (!startTime) {
+                startTime = timestamp;
+                lastTimestamp = timestamp;
+            }
+
+            const elapsed = (timestamp - startTime) / 1000;
+            const delta = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+
+            rotationAngle += rotationDegreesPerSecond * delta;
+            coverImage.style.transform = `rotate(${rotationAngle}deg)`;
+
+            let currentLineIndex = -1;
+            for (let i = 0; i < lyrics.length; i++) {
+                if (elapsed >= lyrics[i].time) {
+                    currentLineIndex = i;
+                } else {
+                    break;
+                }
+            }
+
+            if (currentLineIndex !== -1) {
+                document.querySelectorAll('.lyrics li').forEach((li, index) => {
+                    if (index === currentLineIndex) {
+                        li.classList.add('highlight');
+                    } else {
+                        li.classList.remove('highlight');
+                    }
+                });
+
+                const highlightElement = lyricsContainer.querySelector('.highlight');
+                if (highlightElement) {
+                    const offset = highlightElement.offsetTop - lyricsWrapper.clientHeight * 0.25 + highlightElement.clientHeight / 2;
+                    lyricsContainer.style.transform = `translateY(${-offset}px)`;
+                }
+            }
+
+            if (lyrics.length > 0 && elapsed >= lyrics[lyrics.length - 1].time) {
+                cancelAnimationFrame(animationFrameId);
+                setTimeout(() => {
+                    coverImage.classList.add('grayscale');
+                }, 1000);
+                return;
+            }
+
+            animationFrameId = requestAnimationFrame(animate);
+        }
+
+        function resetPlayback() {
+            if (isPlaying) {
+                cancelAnimationFrame(animationFrameId);
+                isPlaying = false;
+            }
+            startTime = null;
+            rotationAngle = 0;
+            coverImage.style.transform = 'rotate(0deg)';
+            coverImage.classList.remove('grayscale');
+            lyricsContainer.style.transform = 'translateY(0)';
+            document.querySelectorAll('.lyrics li').forEach(li => li.classList.remove('highlight'));
+            setTimeout(startPlayback, 1000);
+        }
+
+        async function startPlayback() {
+            if (isPlaying) return;
+            isPlaying = true;
+            await loadConfig();
+            lyrics = await fetchLyrics();
+            if (lyrics.length > 0) {
+                renderLyrics();
+                animationFrameId = requestAnimationFrame(animate);
+            } else {
+                lyricsContainer.innerHTML = '<li>无法加载歌词</li>';
+            }
+        }
+
+        restartBtn.addEventListener('click', resetPlayback);
+
+        rpmUpBtn.addEventListener('click', () => {
+            setRpm(currentRpm + 1);
+        });
+
+        rpmDownBtn.addEventListener('click', () => {
+            setRpm(currentRpm - 1);
+        });
+
+        window.onload = startPlayback;
+    </script>
+</body>
+
+</html>
