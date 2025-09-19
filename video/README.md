@@ -1,1 +1,0 @@
-# Cover video automated
