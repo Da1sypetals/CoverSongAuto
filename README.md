@@ -22,6 +22,9 @@ ffmpeg -i <source_video.mkv> -c copy <destination_video.mp4>
 
 然后再用图片参考，用prompt `把这副书法放到 <xx环境> 里` ，即可生成带背景的书法图
 
+## 音频
+把全民k歌的歌曲链接复制到浏览器里，F12 检查元素，在html里面搜 `.m4a`，找到音频的链接下载下来。
+
 ## 成品
 
 视频掐头去尾，对齐音频。
