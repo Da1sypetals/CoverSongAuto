@@ -291,7 +291,8 @@
             let firstTime = null;
 
             lines.forEach(line => {
-                const parts = line.match(/^\[(\d{2}):(\d{2}\.\d{2})\](.*)/);
+                // Corrected regex to handle the beginning of the line
+                const parts = line.match(/^\[(\d{2}):(\d{2}\.\d{2,3})\](.*)/);
                 if (parts) {
                     const minutes = parseInt(parts[1], 10);
                     const seconds = parseFloat(parts[2]);
@@ -322,7 +323,6 @@
                 lyricsContainer.appendChild(li);
             });
         }
-
         function animate(timestamp) {
             if (!startTime) {
                 startTime = timestamp;
@@ -362,11 +362,16 @@
             }
 
             if (lyrics.length > 0 && elapsed >= lyrics[lyrics.length - 1].time) {
-                cancelAnimationFrame(animationFrameId);
-                setTimeout(() => {
-                    coverImage.classList.add('grayscale');
-                }, 1000);
-                return;
+                // If this is the first time we've hit the end of the song
+                if (isPlaying) {
+                    isPlaying = false;
+                    // Stop spinning the plate and apply grayscale after 6 seconds
+                    setTimeout(() => {
+                        cancelAnimationFrame(animationFrameId);
+                        coverImage.classList.add('grayscale');
+                        rotationDegreesPerSecond = 0; // Stop the rotation
+                    }, 6000);
+                }
             }
 
             animationFrameId = requestAnimationFrame(animate);

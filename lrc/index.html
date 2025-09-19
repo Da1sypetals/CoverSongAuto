@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LRC Generator</title>
+    <!-- Use Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+        }
+
+        /* Hide the scrollbar for the panels but allow content to scroll */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            /* IE and Edge */
+            scrollbar-width: none;
+            /* Firefox */
+        }
+
+        /* Custom glow effect on buttons */
+        .glow-button {
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0);
+        }
+
+        .glow-button:hover {
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        }
+
+        .animated-pulse-custom {
+            animation: pulse-custom 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-custom {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-gray-100 flex flex-col min-h-screen">
+    <div class="container mx-auto p-4 md:p-8 flex-grow">
+        <h1 class="text-3xl md:text-5xl font-bold text-center mb-8 text-cyan-400">
+            LRC Generator
+        </h1>
+
+        <!-- Main Grid Layout -->
+        <div id="setup-panel" class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center max-w-4xl mx-auto">
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg h-96 flex flex-col">
+                <h2 class="text-xl font-semibold mb-4 text-cyan-300">1. Paste Your Lyrics</h2>
+                <p class="text-sm text-gray-400 mb-4">Paste your text below. Lines will be separated by newlines. Empty
+                    lines will be removed automatically.</p>
+                <textarea id="text-input" placeholder="Paste your lyrics here..."
+                    class="flex-grow p-4 bg-gray-700 rounded-lg text-gray-200 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-sm"></textarea>
+                <button id="start-button"
+                    class="mt-4 w-full bg-cyan-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-cyan-700 transition-colors shadow-lg glow-button">
+                    Start Timing
+                </button>
+            </div>
+
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg flex flex-col justify-center items-center h-96">
+                <h2 class="text-xl font-semibold mb-4 text-cyan-300">How to Use</h2>
+                <div class="space-y-4 text-gray-300">
+                    <p class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-cyan-400" viewBox="0 0 20 20"
+                            fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        Click "Start Timing" to begin.
+                    </p>
+                    <p class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-cyan-400" viewBox="0 0 20 20"
+                            fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-7h2a1 1 0 100-2h-2a1 1 0 100 2zm3-3h-4a1 1 0 000 2h4a1 1 0 000-2z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        Listen to your music and press the <b
+                            class="font-bold text-white px-2 py-1 bg-gray-700 rounded-md mx-1">Spacebar</b> (or click
+                        "Next Line") at the start of each line.
+                    </p>
+                    <p class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-cyan-400" viewBox="0 0 20 20"
+                            fill="currentColor">
+                            <path
+                                d="M10 2a8 8 0 100 16 8 8 0 000-16zM6 9a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm3 4a1 1 0 011-1h1a1 1 0 110 2h-1a1 1 0 01-1-1z" />
+                        </svg>
+                        When all lines are timed, a "Generate LRC" button will appear.
+                    </p>
+                    <p class="flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-cyan-400" viewBox="0 0 20 20"
+                            fill="currentColor">
+                            <path fill-rule="evenodd"
+                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-8a1 1 0 11-2 0 1 1 0 012 0zm4 0a1 1 0 11-2 0 1 1 0 012 0z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        Click it to get your final LRC text.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Application Panels (hidden initially) -->
+        <div id="main-app" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6 items-start max-w-6xl mx-auto">
+
+            <!-- Left Panel: Preview -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-lg lg:col-span-2 flex flex-col">
+                <h2 class="text-xl font-semibold mb-4 text-cyan-300">2. Time Your Lines</h2>
+                <div id="preview-panel" class="relative bg-gray-700 p-6 rounded-xl overflow-hidden h-64 md:h-96">
+                    <div id="next-button"
+                        class="absolute inset-0 z-10 flex items-center justify-center p-4 cursor-pointer">
+                        <div
+                            class="w-16 h-16 rounded-full bg-cyan-600 text-white flex items-center justify-center text-4xl font-bold opacity-0 hover:opacity-100 transition-opacity transform hover:scale-110">
+                            →
+                        </div>
+                    </div>
+                    <div class="relative z-20 h-full flex flex-col no-scrollbar overflow-y-auto">
+                        <!-- Current Line -->
+                        <div
+                            class="flex-none text-2xl md:text-4xl font-bold text-center mb-6 text-yellow-300 animated-pulse-custom">
+                            <span id="current-line"></span>
+                        </div>
+
+                        <!-- Upcoming Lines -->
+                        <div class="flex-grow text-gray-400 text-lg md:text-xl font-light text-center space-y-2">
+                            <p id="next-line-1"></p>
+                            <p id="next-line-2"></p>
+                            <p id="next-line-3"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 mt-6 justify-center">
+                    <button id="next-button-bottom"
+                        class="flex-1 bg-cyan-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-cyan-700 transition-colors shadow-lg glow-button">
+                        Next Line (Spacebar)
+                    </button>
+                    <button id="reset-button"
+                        class="flex-1 bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-700 transition-colors shadow-lg glow-button hidden">
+                        Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Output & Generate -->
+            <div id="output-panel" class="bg-gray-800 p-6 rounded-xl shadow-lg flex flex-col h-96">
+                <h2 class="text-xl font-semibold mb-4 text-cyan-300">3. Get Your LRC</h2>
+                <button id="generate-button"
+                    class="w-full bg-emerald-600 text-white font-bold py-3 px-6 rounded-lg mb-4 hover:bg-emerald-700 transition-colors shadow-lg glow-button hidden">
+                    Generate LRC
+                </button>
+                <textarea id="lrc-output" readonly placeholder="Your generated LRC will appear here..."
+                    class="flex-grow p-4 bg-gray-700 rounded-lg text-gray-200 focus:outline-none text-sm resize-none"></textarea>
+                <button id="copy-button"
+                    class="w-full bg-gray-600 text-gray-300 font-bold py-3 px-6 rounded-lg mt-4 hover:bg-gray-700 transition-colors shadow-lg glow-button"
+                    disabled>
+                    Copy to Clipboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state variables
+        let lines = [];
+        let currentIndex = 0;
+        let startTime = null;
+        let lrcContent = [];
+        const OFFSET_MS = 100; // A minimum representable offset
+
+        // UI elements
+        const setupPanel = document.getElementById('setup-panel');
+        const mainApp = document.getElementById('main-app');
+        const textInput = document.getElementById('text-input');
+        const startButton = document.getElementById('start-button');
+        const nextButtonBottom = document.getElementById('next-button-bottom');
+        const generateButton = document.getElementById('generate-button');
+        const lrcOutput = document.getElementById('lrc-output');
+        const copyButton = document.getElementById('copy-button');
+        const currentLineSpan = document.getElementById('current-line');
+        const nextLine1P = document.getElementById('next-line-1');
+        const nextLine2P = document.getElementById('next-line-2');
+        const nextLine3P = document.getElementById('next-line-3');
+        const resetButton = document.getElementById('reset-button');
+
+        // This function handles the main logic for recording a timestamp
+        const recordTimestamp = () => {
+            // Check if all lines have been processed on the last press
+            if (currentIndex >= lines.length) {
+                return;
+            }
+
+            const currentTime = Date.now();
+            let elapsedMilliseconds;
+
+            if (startTime === null) {
+                // This is the first button press. Time the first line at 0.
+                elapsedMilliseconds = 0;
+                startTime = currentTime;
+            } else {
+                // Subsequent presses. Calculate time relative to the start.
+                elapsedMilliseconds = currentTime - startTime;
+            }
+
+            // Add the minimum representable offset
+            elapsedMilliseconds += OFFSET_MS;
+
+            // Format time as [mm:ss.xx]
+            const minutes = Math.floor(elapsedMilliseconds / 60000);
+            const seconds = Math.floor((elapsedMilliseconds % 60000) / 1000);
+            const milliseconds = Math.floor((elapsedMilliseconds % 1000) / 10);
+            const timeFormatted = `[${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}]`;
+
+            lrcContent.push(`${timeFormatted}${lines[currentIndex]}`);
+
+            // Move to next line
+            currentIndex++;
+            updatePreview();
+
+            // Check if all lines are now processed and update the UI
+            if (currentIndex >= lines.length) {
+                nextButtonBottom.disabled = true;
+                nextButtonBottom.textContent = 'All Lines Timed!';
+                nextButtonBottom.classList.remove('bg-cyan-600', 'hover:bg-cyan-700');
+                nextButtonBottom.classList.add('bg-gray-600', 'cursor-not-allowed');
+                generateButton.classList.remove('hidden');
+            }
+        };
+
+        const updatePreview = () => {
+            currentLineSpan.textContent = lines[currentIndex] || 'Timing Complete!';
+            nextLine1P.textContent = lines[currentIndex + 1] || '';
+            nextLine2P.textContent = lines[currentIndex + 2] || '';
+            nextLine3P.textContent = lines[currentIndex + 3] || '';
+        };
+
+        const resetApp = () => {
+            lines = [];
+            currentIndex = 0;
+            startTime = null;
+            lrcContent = [];
+
+            textInput.value = '';
+            lrcOutput.value = '';
+
+            currentLineSpan.textContent = '';
+            nextLine1P.textContent = '';
+            nextLine2P.textContent = '';
+            nextLine3P.textContent = '';
+
+            // Reset UI states
+            setupPanel.classList.remove('hidden');
+            mainApp.classList.add('hidden');
+            generateButton.classList.add('hidden');
+            copyButton.disabled = true;
+            nextButtonBottom.disabled = false;
+            nextButtonBottom.textContent = 'Next Line (Spacebar)';
+            nextButtonBottom.classList.remove('bg-gray-600', 'cursor-not-allowed');
+            nextButtonBottom.classList.add('bg-cyan-600', 'hover:bg-cyan-700');
+            resetButton.classList.add('hidden');
+
+            // Remove existing event listeners to prevent duplicates
+            document.removeEventListener('keydown', handleKeydown);
+            nextButtonBottom.removeEventListener('click', recordTimestamp);
+        };
+
+        const handleKeydown = (event) => {
+            if (event.code === 'Space' && currentIndex < lines.length) {
+                event.preventDefault(); // Prevent page from scrolling
+                recordTimestamp();
+            }
+        };
+
+        // Event listeners
+        startButton.addEventListener('click', () => {
+            const rawText = textInput.value;
+            if (!rawText.trim()) {
+                // If the input is empty, do nothing
+                return;
+            }
+
+            // Trim and filter empty lines
+            lines = rawText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+
+            if (lines.length > 0) {
+                // Set the initial state
+                currentIndex = 0;
+                startTime = null;
+                lrcContent = [];
+
+                setupPanel.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                resetButton.classList.remove('hidden');
+
+                // Add event listeners for keydown and button click
+                document.addEventListener('keydown', handleKeydown);
+                nextButtonBottom.addEventListener('click', recordTimestamp);
+
+                // Show the first line to be timed, but don't record the timestamp yet
+                updatePreview();
+            }
+        });
+
+        generateButton.addEventListener('click', () => {
+            lrcOutput.value = lrcContent.join('\n');
+            copyButton.disabled = false;
+        });
+
+        copyButton.addEventListener('click', () => {
+            lrcOutput.select();
+            try {
+                // Use document.execCommand for better compatibility in iframes
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    copyButton.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyButton.textContent = 'Copy to Clipboard';
+                    }, 2000);
+                }
+            } catch (err) {
+                console.error('Failed to copy text', err);
+            }
+        });
+
+        resetButton.addEventListener('click', resetApp);
+    </script>
+</body>
+
+</html>
