@@ -20,11 +20,10 @@
             height: 100vh;
             margin: 36px;
             overflow: hidden;
-            /* Default to hidden for player page */
             gap: 64px;
         }
 
-        /* New CSS class to allow scrolling on the body */
+        /* 启用滚动时的 body 样式 */
         body.scrollable {
             overflow-y: auto;
             align-items: flex-start;
@@ -34,19 +33,189 @@
 
         .container {
             display: none;
-            width: 90%;
-            height: 80%;
-            background-color: #1e1e1e;
-            border-radius: 15px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            padding: 20px;
-            gap: 20px;
+            /* 不再使用左右布局，宽度高度由 .lyrics-container 决定 */
+            background-color: transparent;
+            padding: 0;
+            gap: 0;
         }
 
         body.player-active .container {
             display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
+        /* --- 核心：修改后的 lyrics-container（手机竖屏结构） --- */
+        .lyrics-container {
+            display: flex;
+            flex-direction: column;
+            width: 360px;
+            /* 模拟手机宽度 */
+            height: 640px;
+            /* 9:16 比例（360x640），可按需调整 */
+            background-color: #1e1e1e;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            /* 关键：裁剪唱片下半部分 */
+            position: relative;
+        }
+
+        /* 歌曲元数据区 */
+        .metadata-section {
+            padding: 24px 20px 16px;
+            text-align: center;
+            flex-shrink: 0;
+            /* 不被压缩 */
+            background-color: #1e1e1e;
+            /* border-bottom: 1px solid #333; */
+        }
+
+        .song-title {
+            font-size: 1.8em;
+            margin: 0.3em 0 0.1em;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .song-singer,
+        .song-cover-artist {
+            font-size: 1.08em;
+            line-height: 1.8em;
+            margin: 0.2em 0;
+            opacity: 0.8;
+            color: #cccccc;
+        }
+
+        .song-cover-artist {
+            margin-bottom: 0.5em;
+            font-style: italic;
+        }
+
+        /* 歌词滚动区 */
+        .lyrics-wrapper {
+            flex: 1;
+            /* 占据剩余空间 */
+            overflow: hidden;
+            padding: 10px 20px 5px;
+            position: relative;
+            background-color: #1e1e1e;
+        }
+
+        .lyrics {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            transition: transform 0.5s ease-in-out;
+            will-change: transform;
+        }
+
+        .lyrics li {
+            padding: 8px 0;
+            font-size: 18px;
+            opacity: 0.6;
+            transition: opacity 0.5s ease, color 0.5s ease;
+            color: #bbbbbb;
+            text-align: center;
+        }
+
+        .lyrics li.highlight {
+            font-size: 22px;
+            color: #ffffff;
+            opacity: 1;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+        }
+
+        /* 唱片区容器 —— 只显示上半圆 */
+        .record-container {
+            width: 100%;
+            height: 40%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            overflow: hidden;
+            position: relative;
+            background-color: #1e1e1e;
+        }
+
+        /* 唱片本体 —— 直径 = 宽度，圆心对齐底部 */
+        .record-plate {
+            width: 100%;
+            height: 0;
+            /* 关键：用 padding-top 实现正方形 */
+            padding-top: 100%;
+            /* 宽高比 1:1 */
+            border-radius: 50%;
+            background-color: #333;
+            border: 10px solid #222;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            transform: translateY(50%);
+            animation: none;
+        }
+
+        /* 唱片封面图像 —— 保留发光动画 */
+        .cover-image {
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            width: 80%;
+            padding-top: 80%;
+            /* 强制 1:1 宽高比 */
+            height: 0;
+            /* 关键：高度由 padding 决定 */
+            border-radius: 50%;
+            overflow: hidden;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 24px rgba(255, 255, 255, 0.5);
+            }
+
+            to {
+                box-shadow: 0 0 32px rgba(255, 255, 255, 0.8);
+            }
+        }
+
+        .cover-image img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 255, 255, 0.5);
+            transition: filter 1s ease-in-out, box-shadow 1s ease-in-out;
+        }
+
+
+
+        .cover-image.grayscale {
+            filter: grayscale(100%);
+        }
+
+        /* 中心轴孔 */
+        .record-hole {
+            width: 30px;
+            height: 30px;
+            background-color: #222;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid #555;
+            z-index: 2;
+        }
+
+        /* --- 控制面板（保持原样，悬浮在右侧） --- */
         .controls-container {
             display: none;
             flex-direction: column;
@@ -58,6 +227,11 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
             width: 200px;
             gap: 20px;
+            position: fixed;
+            right: 36px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
         }
 
         body.player-active .controls-container {
@@ -105,139 +279,19 @@
             font-weight: bold;
         }
 
-        /* Left Lyrics Area */
-        .lyrics-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            text-align: center;
-            position: relative;
-        }
-
-        .song-title {
-            font-size: 3em;
-            margin: 0.5em 0 0.1em;
-            font-weight: bold;
-        }
-
-        .song-singer,
-        .song-cover-artist {
-            font-size: 1.5em;
-            margin: 0.25em 0 0.1em;
-            opacity: 0.8;
-        }
-
-        /* Add a margin below the new element */
-        .song-cover-artist {
-            margin-bottom: 1em;
-        }
-
-        /* New wrapper to prevent lyrics overlap */
-        .lyrics-wrapper {
-            flex-grow: 1;
-            overflow: hidden;
-            padding: 20px;
-            position: relative;
-        }
-
-        .lyrics {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            transition: transform 0.5s ease-in-out;
-            will-change: transform;
-            position: relative;
-        }
-
-        .lyrics li {
-            padding: 10px 0;
-            font-size: 20px;
-            opacity: 0.6;
-            transition: opacity 0.5s ease, color 0.5s ease;
-        }
-
-        .lyrics li.highlight {
-            font-size: 24px;
-            color: #fff;
-            opacity: 1;
-            font-weight: bold;
-            transition: font-size 0.5s ease, color 0.5s ease, opacity 0.5s ease;
-        }
-
-        /* Right Cover Area */
-        .cover-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
-
-        .record-plate {
-            width: 450px;
-            height: 450px;
-            background-color: #333;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            border: 10px solid #222;
-            position: relative;
-        }
-
-        .cover-image {
-            width: 80%;
-            height: 80%;
-            border-radius: 50%;
-            object-fit: cover;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.7), 0 0 20px rgba(255, 255, 255, 0.5);
-            transition: filter 1s ease-in-out, box-shadow 1s ease-in-out;
-            animation: glow 1.4s infinite alternate;
-        }
-
-        @keyframes glow {
-            from {
-                box-shadow: 0 0 24px rgba(255, 255, 255, 0.5);
-            }
-
-            to {
-                box-shadow: 0 0 32px rgba(255, 255, 255, 0.8);
-            }
-        }
-
-        .cover-image.grayscale {
-            filter: grayscale(100%);
-        }
-
-        .record-hole {
-            width: 30px;
-            height: 30px;
-            background-color: #222;
-            border-radius: 50%;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            border: 2px solid #555;
-        }
-
-        /* Start Page / Modal - 修改这里使用CSS变量和渐变 */
+        /* --- 开始页面（未改动，保留供参考） --- */
         .start-page {
             position: relative;
-            /* Changed to relative to enable scrolling */
             top: 0;
             left: 0;
             width: 100%;
             min-height: 100vh;
-            /* Set a minimum height for scrolling */
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
             align-items: center;
             z-index: 100;
             background: linear-gradient(to bottom, var(--bg-color), #000000);
-            /* 使用渐变背景 */
         }
 
         .start-form {
@@ -332,19 +386,29 @@
 <body>
     <div class="container">
         <div class="lyrics-container">
-            <h2 class="song-title"></h2>
-            <p class="song-singer"></p>
-            <p class="song-cover-artist"></p>
+            <!-- 歌曲元数据 -->
+            <div class="metadata-section">
+                <h2 class="song-title"></h2>
+                <p class="song-singer"></p>
+                <p class="song-cover-artist"></p>
+            </div>
+
+            <!-- 歌词区 -->
             <div class="lyrics-wrapper">
                 <ul class="lyrics"></ul>
             </div>
-        </div>
-        <div class="cover-container">
-            <div class="record-plate">
-                <img alt="Album Cover" class="cover-image">
-                <div class="record-hole"></div>
+
+            <!-- 唱片区（只显示上半圆） -->
+            <div class="record-container">
+                <div class="record-plate">
+                    <div class="cover-image">
+                        <img alt="Album Cover" src="">
+                    </div>
+                    <div class="record-hole"></div>
+                </div>
             </div>
         </div>
+        <!-- 删除原 .cover-container，不再需要 -->
     </div>
     <div class="controls-container">
         <h3>Controls</h3>
@@ -403,7 +467,7 @@
             // --- DOM Element Selection ---
             const lyricsWrapper = document.querySelector('.lyrics-wrapper');
             const lyricsContainer = document.querySelector('.lyrics');
-            const coverImage = document.querySelector('.cover-image');
+            const coverImage = document.querySelector('.cover-image img');
             const songTitleEl = document.querySelector('.song-title');
             const songSingerEl = document.querySelector('.song-singer');
             const songCoverArtistEl = document.querySelector('.song-cover-artist');
