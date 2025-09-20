@@ -546,9 +546,7 @@
                 if (hasFinished && !isEndingSequence) {
                     isEndingSequence = true; // Ensure this only runs once per playback
                     setTimeout(() => {
-                        cancelAnimationFrame(animationFrameId);
-                        animationFrameId = null;
-                        coverImage.classList.add('grayscale');
+                        // Do not cancel animation or add grayscale
                     }, 6000); // The 6-second tail wait
                 }
 
