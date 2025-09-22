@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>歌词播放器</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --primary-color: #d4af37;
+            --secondary-color: #8b7355;
+            --text-light: #f0f0f0;
+            --text-dim: #cccccc;
+            /* 添加自定义颜色变量 */
+            --custom-dark: #d4af37;
+            --custom-light: #f0d858;
+        }
+
+        body {
+            font-family: 'Source Han Serif SC';
+            background: radial-gradient(circle at 30% 20%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(139, 115, 85, 0.08) 0%, transparent 50%),
+                linear-gradient(135deg, var(--bg-color) 0%, #1a1a1a 50%, #0d0d0d 100%);
+            color: var(--text-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 36px;
+            overflow: hidden;
+            gap: 64px;
+            perspective: 1200px;
+            /* 添加3D透视 */
+        }
+
+        body.scrollable {
+            overflow-y: auto;
+            align-items: flex-start;
+            height: auto;
+            padding: 36px;
+        }
+
+        .container {
+            display: none;
+            background-color: transparent;
+            padding: 0;
+            gap: 0;
+        }
+
+        body.player-active .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 主容器 - 卡牌风格 - 统一背景 */
+        .lyrics-container {
+            display: flex;
+            flex-direction: column;
+            width: 420px;
+            height: 680px;
+            /* 统一的背景渐变 */
+            background: linear-gradient(145deg, #2a2a2a 0%, #1e1e1e 50%, #1a1a1a 100%);
+            border-radius: 20px;
+            box-shadow:
+                0 0 60px rgba(255, 255, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            position: relative;
+            border: 2px solid var(--custom-dark);
+
+            /* 卡牌动效初始状态 - 修改为8圈旋转 */
+            transform: scale(0.3) rotateY(-2880deg) rotateX(15deg);
+            opacity: 0;
+            transform-origin: center;
+            transition: all 2.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* 卡牌动效激活状态 */
+        .lyrics-container.card-active {
+            transform: scale(1) rotateY(0deg) rotateX(0deg);
+            opacity: 1;
+        }
+
+        /* 卡牌发光效果 - 只在动画时显示 */
+        .lyrics-container.card-animating {
+            box-shadow:
+                0 0 60px rgba(255, 255, 255, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+                0 0 100px rgba(212, 175, 55, 0.6),
+                0 0 200px rgba(212, 175, 55, 0.3);
+        }
+
+        /* 巨大问号样式 - 使用浅色主题颜色 */
+        .question-mark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 200px;
+            color: var(--custom-light);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+            text-shadow:
+                0 0 30px rgba(240, 216, 88, 0.8),
+                0 0 60px rgba(240, 216, 88, 0.4),
+                2px 2px 4px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+
+        .question-mark.show {
+            opacity: 1;
+        }
+
+        /* 装饰性边框 */
+        .lyrics-container::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border: 1px solid var(--custom-dark);
+            border-radius: 15px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* 顶部装饰纹样 - 移除背景色 */
+        .decoration-top {
+            height: 40px;
+            /* 移除原来的背景渐变 */
+            background: transparent;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .decoration-top::after {
+            /* content: '◆ ❋ ◆'; */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--primary-color);
+            font-size: 16px;
+            text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+        }
+
+        /* 歌曲信息区 - 移除背景色 */
+        .metadata-section {
+            padding: 15px 25px 20px;
+            text-align: center;
+            flex-shrink: 0;
+            /* 移除原来的背景色 */
+            background: transparent;
+            position: relative;
+        }
+
+        .song-title {
+            font-size: 2.2em;
+            margin: 0.2em 0;
+            font-weight: bold;
+            color: var(--custom-light);
+            text-shadow:
+                0 0 20px rgba(212, 175, 55, 0.4),
+                2px 2px 4px rgba(0, 0, 0, 0.8);
+            letter-spacing: 2px;
+        }
+
+        .song-singer {
+            font-size: 1.3em;
+            margin: 0.5em 0;
+            color: var(--secondary-color);
+            opacity: 0.9;
+        }
+
+        .song-cover-artist {
+            font-size: 1em;
+            margin: 0.3em 0 0.8em;
+            color: var(--text-dim);
+            opacity: 0.7;
+            font-style: italic;
+        }
+
+        /* 歌词区域 - 移除背景色 */
+        .lyrics-wrapper {
+            flex: 1;
+            overflow: hidden;
+            padding: 25px 30px;
+            position: relative;
+            /* 移除原来的背景色 */
+            background: transparent;
+        }
+
+        .lyrics {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+        }
+
+        .lyrics li {
+            padding: 12px 0;
+            font-size: 20px;
+            line-height: 1.6;
+            opacity: 0.5;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--text-dim);
+            text-align: center;
+            position: relative;
+        }
+
+        .lyrics li.highlight {
+            font-size: 28px;
+            color: var(--custom-light);
+            opacity: 1;
+            font-weight: bold;
+            text-shadow:
+                0 0 20px rgba(180, 180, 180, 0.8),
+                0 0 40px rgba(180, 180, 180, 0.4);
+            transform: scale(1.05);
+        }
+
+        /* 当前歌词的装饰效果 */
+        .lyrics li.highlight::before,
+        .lyrics li.highlight::after {
+            content: '✧';
+            position: absolute;
+            color: var(--custom-light);
+            font-size: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.8;
+            animation: sparkle 2s ease-in-out infinite alternate;
+        }
+
+        .lyrics li.highlight::before {
+            left: -30px;
+        }
+
+        .lyrics li.highlight::after {
+            right: -30px;
+        }
+
+        @keyframes sparkle {
+            0% {
+                opacity: 0.4;
+                transform: translateY(-50%) scale(0.8);
+            }
+
+            100% {
+                opacity: 1;
+                transform: translateY(-50%) scale(1.2);
+            }
+        }
+
+        /* 底部装饰 - 移除背景色 */
+        .decoration-bottom {
+            height: 40px;
+            /* 移除原来的背景渐变 */
+            background: transparent;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .decoration-bottom::after {
+            /* content: '❋ ◆ ❋'; */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--secondary-color);
+            font-size: 16px;
+            text-shadow: 0 0 10px rgba(139, 115, 85, 0.5);
+        }
+
+        /* 背景粒子效果 */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--custom-dark);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+            opacity: 0;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                opacity: 0;
+                transform: translateY(0) rotate(0deg);
+            }
+
+            50% {
+                opacity: 0.6;
+                transform: translateY(-20px) rotate(180deg);
+            }
+        }
+
+        /* 控制面板保持不变 */
+        .controls-container {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            width: 200px;
+            gap: 20px;
+            position: fixed;
+            right: 36px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            border: 1px solid var(--custom-dark);
+        }
+
+        body.player-active .controls-container {
+            display: flex;
+        }
+
+        .controls-container h3 {
+            color: var(--custom-light);
+            text-align: center;
+            margin-top: 0;
+        }
+
+        .controls-container button {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--custom-dark);
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(145deg, var(--custom-dark), var(--secondary-color));
+            color: #000;
+            font-weight: bold;
+            text-shadow: none;
+        }
+
+        .controls-container button:hover {
+            background: linear-gradient(145deg, var(--custom-light), var(--custom-dark));
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+        }
+
+        /* 开始页面样式 */
+        .start-page {
+            position: relative;
+            top: 0;
+            left: 0;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            z-index: 100;
+            background: radial-gradient(circle at 30% 20%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(139, 115, 85, 0.08) 0%, transparent 50%),
+                linear-gradient(135deg, var(--bg-color) 0%, #1a1a1a 50%, #0d0d0d 100%);
+        }
+
+        .start-form {
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 600px;
+            margin: 50px 0;
+            border: 2px solid var(--custom-dark);
+        }
+
+        .start-form h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2em;
+            color: var(--custom-light);
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+        }
+
+        .start-form label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-light);
+        }
+
+        .start-form input[type="text"],
+        .start-form textarea,
+        .start-form input[type="color"] {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--custom-dark);
+            background-color: #2a2a2a;
+            color: var(--text-light);
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .start-form input[type="text"]:focus,
+        .start-form textarea:focus {
+            border-color: var(--custom-dark);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+            outline: none;
+        }
+
+        .start-form textarea {
+            min-height: 150px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        #coverDropZone {
+            border: 2px dashed var(--custom-dark);
+            text-align: center;
+            padding: 20px;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            background-color: rgba(212, 175, 55, 0.05);
+        }
+
+        #coverDropZone.dragover {
+            border-color: var(--custom-light);
+            background-color: rgba(212, 175, 55, 0.1);
+        }
+
+        .start-page-button {
+            width: 100%;
+            padding: 15px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            background: linear-gradient(145deg, var(--custom-dark), var(--secondary-color));
+            color: #000;
+            transition: all 0.3s ease;
+        }
+
+        .start-page-button:hover {
+            background: linear-gradient(145deg, var(--custom-light), var(--custom-dark));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+        }
+
+        .cover-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--custom-dark);
+            display: block;
+            margin: 10px auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="lyrics-container">
+            <!-- 顶部装饰 -->
+            <div class="decoration-top"></div>
+
+            <!-- 歌曲信息区 -->
+            <div class="metadata-section">
+                <h2 class="song-title"></h2>
+                <p class="song-singer"></p>
+                <p class="song-cover-artist"></p>
+            </div>
+
+            <!-- 歌词区 -->
+            <div class="lyrics-wrapper">
+                <ul class="lyrics"></ul>
+            </div>
+
+            <!-- 底部装饰 -->
+            <div class="decoration-bottom"></div>
+
+            <!-- 背景粒子效果 -->
+            <div class="particles" id="particles"></div>
+
+            <!-- 巨大问号 - 在旋转动画时显示 -->
+            <div class="question-mark" id="questionMark">?</div>
+        </div>
+    </div>
+
+    <div class="controls-container">
+        <h3 style="color: var(--primary-color); text-align: center; margin-top: 0;">控制面板</h3>
+        <button id="restartBtn">重新播放</button>
+        <button id="editBtn">编辑设置</button>
+        <div class="rpm-control">
+            <p style="color: var(--text-light);">歌词位置: <span id="positionDisplay" class="rpm-display"></span></p>
+            <div class="rpm-buttons">
+                <button id="positionUpBtn">↑</button>
+                <button id="positionDownBtn">↓</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="start-page" id="startPage">
+        <div class="start-form">
+            <h3>歌词播放器配置</h3>
+            <div class="form-group">
+                <label for="darkColorPicker">选择主题深色:</label>
+                <input type="color" id="darkColorPicker" value="#d4af37"
+                    style="width: 40%; height: 60px; border: 2px solid var(--primary-color); border-radius: 8px;">
+            </div>
+            <div class="form-group">
+                <label for="lightColorPicker">选择主题浅色:</label>
+                <input type="color" id="lightColorPicker" value="#f0d858"
+                    style="width: 40%; height: 60px; border: 2px solid var(--primary-color); border-radius: 8px;">
+            </div>
+            <div class="form-group">
+                <label for="titleInput">歌曲名称:</label>
+                <input type="text" id="titleInput" placeholder="请输入歌曲名称">
+            </div>
+            <div class="form-group">
+                <label for="artistInput">原唱歌手:</label>
+                <input type="text" id="artistInput" placeholder="请输入原唱歌手名称">
+            </div>
+            <div class="form-group">
+                <label for="coverArtistInput">翻唱歌手:</label>
+                <input type="text" id="coverArtistInput" placeholder="请输入翻唱歌手名称">
+            </div>
+            <div class="form-group">
+                <label for="lyricsTextarea">粘贴LRC格式歌词:</label>
+                <textarea id="lyricsTextarea" placeholder="[00:00.00]第一句歌词
+[00:05.12]第二句歌词"></textarea>
+            </div>
+            <button class="start-page-button" id="startPlaybackBtn">开始播放</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM元素选择
+            const lyricsWrapper = document.querySelector('.lyrics-wrapper');
+            const lyricsContainer = document.querySelector('.lyrics');
+            const lyricsContainerEl = document.querySelector('.lyrics-container');
+            const songTitleEl = document.querySelector('.song-title');
+            const songSingerEl = document.querySelector('.song-singer');
+            const songCoverArtistEl = document.querySelector('.song-cover-artist');
+            const restartBtn = document.getElementById('restartBtn');
+            const editBtn = document.getElementById('editBtn');
+            const positionDisplay = document.getElementById('positionDisplay');
+            const positionUpBtn = document.getElementById('positionUpBtn');
+            const positionDownBtn = document.getElementById('positionDownBtn');
+            const particlesContainer = document.getElementById('particles');
+
+            // 开始页面元素
+            const startPage = document.getElementById('startPage');
+            const startPlaybackBtn = document.getElementById('startPlaybackBtn');
+            const darkColorPicker = document.getElementById('darkColorPicker');
+            const lightColorPicker = document.getElementById('lightColorPicker');
+            const titleInput = document.getElementById('titleInput');
+            const artistInput = document.getElementById('artistInput');
+            const coverArtistInput = document.getElementById('coverArtistInput');
+            const lyricsTextarea = document.getElementById('lyricsTextarea');
+
+            // 问号元素
+            const questionMark = document.getElementById('questionMark');
+
+            // 状态管理
+            const APP_STATE = {
+                EDITING: 'editing',
+                PLAYING: 'playing',
+            };
+
+            let currentAppState = null;
+            let config = {};
+            let lyricsContent = '';
+            let lyrics = [];
+            let lyricsVerticalPosition = 0.10; // 新增：歌词垂直位置参数 (0-1)
+
+            // 动画状态变量
+            let animationFrameId = null;
+            let startTime = null;
+            let isEndingSequence = false;
+
+            // 创建粒子效果
+            function createParticles() {
+                particlesContainer.innerHTML = '';
+                for (let i = 0; i < 20; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.top = Math.random() * 100 + '%';
+                    particle.style.animationDelay = Math.random() * 6 + 's';
+                    particle.style.animationDuration = (4 + Math.random() * 4) + 's';
+                    particlesContainer.appendChild(particle);
+                }
+            }
+
+            // 卡牌抽卡动效
+            function playCardAnimation() {
+                return new Promise((resolve) => {
+                    // 显示问号
+                    questionMark.classList.add('show');
+
+                    // 添加发光和动画类
+                    lyricsContainerEl.classList.add('card-animating');
+
+                    // 使用requestAnimationFrame确保类添加后再触发动画
+                    requestAnimationFrame(() => {
+                        lyricsContainerEl.classList.add('card-active');
+                    });
+
+                    // 动画完成后清理类并resolve
+                    setTimeout(() => {
+                        lyricsContainerEl.classList.remove('card-animating');
+                        // 隐藏问号
+                        questionMark.classList.remove('show');
+                        resolve();
+                    }, 2500); // 与CSS transition时间匹配
+                });
+            }
+
+            // 重置卡牌状态
+            function resetCardAnimation() {
+                lyricsContainerEl.classList.remove('card-active', 'card-animating');
+                // 同时隐藏问号
+                questionMark.classList.remove('show');
+            }
+
+            // 更新背景颜色
+            function updateBackgroundColor(darkColor, lightColor) {
+                document.documentElement.style.setProperty('--custom-dark', darkColor);
+                document.documentElement.style.setProperty('--custom-light', lightColor);
+
+                // 更新阴影效果中的颜色
+                const root = document.documentElement;
+                root.style.setProperty('--primary-color', darkColor);
+                root.style.setProperty('--secondary-color', lightColor);
+
+                // 更新所有使用rgba(212, 175, 55, ...)的阴影效果
+                const darkRgb = hexToRgb(darkColor);
+                const lightRgb = hexToRgb(lightColor);
+
+                if (darkRgb) {
+                    // 更新歌词容器的阴影
+                    const lyricsContainer = document.querySelector('.lyrics-container');
+                    if (lyricsContainer) {
+                        lyricsContainer.style.boxShadow = `0 0 60px rgba(${darkRgb.r}, ${darkRgb.g}, ${darkRgb.b}, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.3)`;
+                    }
+                }
+            }
+
+            // 辅助函数：将十六进制颜色转换为RGB
+            function hexToRgb(hex) {
+                const result = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : null;
+            }
+
+            // 状态管理函数
+            function setAppState(newState) {
+                if (currentAppState === newState) return;
+                currentAppState = newState;
+
+                if (newState === APP_STATE.EDITING) {
+                    if (animationFrameId) {
+                        cancelAnimationFrame(animationFrameId);
+                        animationFrameId = null;
+                    }
+                    resetCardAnimation(); // 重置卡牌状态
+                    startPage.style.display = 'flex';
+                    document.body.classList.remove('player-active');
+                    document.body.classList.add('scrollable');
+                } else if (newState === APP_STATE.PLAYING) {
+                    startPage.style.display = 'none';
+                    document.body.classList.add('player-active');
+                    document.body.classList.remove('scrollable');
+                    createParticles();
+                    startPlaybackWithCardAnimation();
+                }
+            }
+
+            // 带卡牌动效的播放启动函数
+            async function startPlaybackWithCardAnimation() {
+                // 先播放卡牌动效
+                await playCardAnimation();
+                // 动效完成后开始播放
+                startPlayback();
+            }
+
+            // 核心功能函数
+            function setPosition(position) {
+                lyricsVerticalPosition = Math.max(0, Math.min(1, position));
+                positionDisplay.textContent = (lyricsVerticalPosition * 100).toFixed(0) + '%';
+            }
+
+            function setLyricsVerticalPosition(position) {
+                lyricsVerticalPosition = Math.max(0, Math.min(1, position));
+                positionDisplay.textContent = lyricsVerticalPosition.toFixed(2);
+                // 如果正在播放，重新计算当前位置
+                if (currentAppState === APP_STATE.PLAYING && animationFrameId) {
+                    const currentLineIndex = Array.from(document.querySelectorAll('.lyrics li')).findIndex(li => li.classList.contains('highlight'));
+                    if (currentLineIndex !== -1) {
+                        const highlightElement = lyricsContainer.children[currentLineIndex];
+                        if (highlightElement) {
+                            const availableHeight = lyricsWrapper.clientHeight - highlightElement.clientHeight;
+                            const targetOffset = lyricsVerticalPosition * availableHeight;
+                            const baseOffset = highlightElement.offsetTop - targetOffset;
+                            lyricsContainer.style.transform = `translateY(${-baseOffset}px)`;
+                        }
+                    }
+                }
+            }
+
+            function parseLRC(lrcText) {
+                const lines = lrcText.split('\n');
+                const parsedLyrics = [];
+                let firstTime = null;
+
+                lines.forEach(line => {
+                    const parts = line.match(/^\[(\d{2}):(\d{2}\.\d{2,3})\](.*)/);
+                    if (parts) {
+                        const minutes = parseInt(parts[1], 10);
+                        const seconds = parseFloat(parts[2]);
+                        const timeInSeconds = minutes * 60 + seconds;
+                        const text = parts[3].trim();
+
+                        if (firstTime === null) firstTime = timeInSeconds;
+
+                        parsedLyrics.push({ time: timeInSeconds - firstTime, text });
+                    }
+                });
+                return parsedLyrics;
+            }
+
+            function renderLyrics() {
+                lyricsContainer.innerHTML = '';
+                lyrics.forEach(line => {
+                    const li = document.createElement('li');
+                    li.textContent = line.text;
+                    lyricsContainer.appendChild(li);
+                });
+            }
+
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+
+                const elapsed = (timestamp - startTime) / 1000;
+
+                let currentLineIndex = -1;
+                for (let i = 0; i < lyrics.length; i++) {
+                    if (elapsed >= lyrics[i].time) {
+                        currentLineIndex = i;
+                    } else {
+                        break;
+                    }
+                }
+
+                if (currentLineIndex !== -1) {
+                    document.querySelectorAll('.lyrics li').forEach((li, index) => {
+                        li.classList.toggle('highlight', index === currentLineIndex);
+                    });
+                    const highlightElement = lyricsContainer.children[currentLineIndex];
+                    if (highlightElement) {
+                        // 计算可用的垂直空间
+                        const availableHeight = lyricsWrapper.clientHeight - highlightElement.clientHeight;
+                        // 根据垂直位置参数计算偏移量
+                        const targetOffset = lyricsVerticalPosition * availableHeight;
+                        const baseOffset = highlightElement.offsetTop - targetOffset;
+                        lyricsContainer.style.transform = `translateY(${-baseOffset}px)`;
+                    }
+                }
+
+                const hasFinished = lyrics.length > 0 && elapsed >= lyrics[lyrics.length - 1].time;
+                if (hasFinished && !isEndingSequence) {
+                    isEndingSequence = true;
+                    setTimeout(() => {
+                        // 播放结束后的处理
+                    }, 6000);
+                }
+
+                if (animationFrameId) {
+                    animationFrameId = requestAnimationFrame(animate);
+                }
+            }
+
+            function resetPlaybackState() {
+                if (animationFrameId) {
+                    cancelAnimationFrame(animationFrameId);
+                    animationFrameId = null;
+                }
+                startTime = null;
+                isEndingSequence = false;
+                lyricsContainer.style.transform = 'translateY(0)';
+                document.querySelectorAll('.lyrics li').forEach(li => li.classList.remove('highlight'));
+            }
+
+            function startPlayback() {
+                resetPlaybackState();
+
+                updateBackgroundColor(config.dark_color || '#d4af37', config.light_color || '#f0d858');
+                songTitleEl.textContent = config.title;
+                songSingerEl.textContent = `原唱：${config.singer}`;
+                songCoverArtistEl.textContent = config.cover_artist ? `翻唱：${config.cover_artist}` : '';
+                setLyricsVerticalPosition(lyricsVerticalPosition); // 初始化显示
+
+                lyrics = parseLRC(lyricsContent);
+                if (lyrics.length > 0) {
+                    renderLyrics();
+                    animationFrameId = requestAnimationFrame(animate);
+                } else {
+                    lyricsContainer.innerHTML = '<li style="opacity: 0.8;">未提供歌词或格式不正确</li>';
+                }
+            }
+
+            // 事件监听器
+            darkColorPicker.addEventListener('input', (e) => {
+                updateBackgroundColor(darkColorPicker.value, lightColorPicker.value);
+            });
+
+            lightColorPicker.addEventListener('input', (e) => {
+                updateBackgroundColor(darkColorPicker.value, lightColorPicker.value);
+            });
+
+            restartBtn.addEventListener('click', () => {
+                resetPlaybackState();
+                setTimeout(startPlayback, 1000);
+            });
+
+            VERTICAL_DELTA = 0.05;
+            positionUpBtn.addEventListener('click', () => setLyricsVerticalPosition(lyricsVerticalPosition - VERTICAL_DELTA));
+            positionDownBtn.addEventListener('click', () => setLyricsVerticalPosition(lyricsVerticalPosition + VERTICAL_DELTA));
+
+            editBtn.addEventListener('click', () => {
+                darkColorPicker.value = config.dark_color || '#d4af37';
+                lightColorPicker.value = config.light_color || '#f0d858';
+                titleInput.value = config.title || '';
+                artistInput.value = config.singer || '';
+                coverArtistInput.value = config.cover_artist || '';
+                lyricsTextarea.value = lyricsContent || '';
+                setAppState(APP_STATE.EDITING);
+            });
+
+            startPlaybackBtn.addEventListener('click', () => {
+                config = {
+                    lyric_position: lyricsVerticalPosition,
+                    dark_color: darkColorPicker.value,
+                    light_color: lightColorPicker.value,
+                    singer: artistInput.value || '未知歌手',
+                    title: titleInput.value || '未知歌曲',
+                    cover_artist: coverArtistInput.value || ''
+                };
+                lyricsContent = lyricsTextarea.value;
+                setAppState(APP_STATE.PLAYING);
+            });
+
+            // 初始化应用
+            setAppState(APP_STATE.EDITING);
+        });
+    </script>
+</body>
+
+</html>
