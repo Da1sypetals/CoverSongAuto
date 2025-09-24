@@ -11,7 +11,7 @@
         }
 
         body {
-            font-family: sans-serif;
+            font-family: "Source Han Serif SC";
             background: linear-gradient(to bottom, var(--bg-color), #000000);
             color: #e0e0e0;
             display: flex;
@@ -21,7 +21,7 @@
             margin: 36px;
             overflow: hidden;
             /* Default to hidden for player page */
-            gap: 64px;
+            gap: 40px;
         }
 
         /* New CSS class to allow scrolling on the body */
@@ -40,7 +40,7 @@
             border-radius: 15px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
             padding: 20px;
-            gap: 20px;
+            gap: 40px;
         }
 
         body.player-active .container {
@@ -150,18 +150,58 @@
         }
 
         .lyrics li {
-            padding: 10px 0;
-            font-size: 20px;
-            opacity: 0.6;
-            transition: opacity 0.5s ease, color 0.5s ease;
+            padding: 15px 0;
+            font-size: 26px;
+            opacity: 0.5;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: scale(0.9);
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
         }
 
         .lyrics li.highlight {
-            font-size: 24px;
+            font-size: 32px;
             color: #fff;
             opacity: 1;
             font-weight: bold;
-            transition: font-size 0.5s ease, color 0.5s ease, opacity 0.5s ease;
+            transform: scale(1.1);
+            text-shadow:
+                0 0 10px rgba(255, 255, 255, 0.4),
+                0 0 20px rgba(255, 255, 255, 0.3),
+                0 0 30px rgba(255, 255, 255, 0.2),
+                0 0 40px rgba(255, 255, 255, 0.1);
+            animation: lyricGlow 2s ease-in-out infinite alternate;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes lyricGlow {
+            0% {
+                text-shadow:
+                    0 0 10px rgba(255, 255, 255, 0.32),
+                    0 0 20px rgba(255, 255, 255, 0.24),
+                    0 0 30px rgba(255, 255, 255, 0.16),
+                    0 0 40px rgba(255, 255, 255, 0.08);
+            }
+
+            100% {
+                text-shadow:
+                    0 0 15px rgba(255, 255, 255, 0.48),
+                    0 0 25px rgba(255, 255, 255, 0.36),
+                    0 0 35px rgba(255, 255, 255, 0.24),
+                    0 0 45px rgba(255, 255, 255, 0.12);
+            }
+        }
+
+        .lyrics li.next {
+            opacity: 0.7;
+            transform: scale(0.95);
+            color: #ccc;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
+        }
+
+        .lyrics li.prev {
+            opacity: 0.3;
+            transform: scale(0.85);
+            color: #888;
         }
 
         /* Right Cover Area */
@@ -532,8 +572,17 @@
 
                 if (currentLineIndex !== -1) {
                     document.querySelectorAll('.lyrics li').forEach((li, index) => {
-                        li.classList.toggle('highlight', index === currentLineIndex);
+                        li.classList.remove('highlight', 'next', 'prev');
+
+                        if (index === currentLineIndex) {
+                            li.classList.add('highlight');
+                        } else if (index === currentLineIndex + 1) {
+                            li.classList.add('next');
+                        } else if (index < currentLineIndex) {
+                            li.classList.add('prev');
+                        }
                     });
+
                     const highlightElement = lyricsContainer.children[currentLineIndex];
                     if (highlightElement) {
                         const offset = highlightElement.offsetTop - lyricsWrapper.clientHeight * 0.25 + highlightElement.clientHeight / 2;
@@ -567,7 +616,7 @@
                 coverImage.style.transform = 'rotate(0deg)';
                 coverImage.classList.remove('grayscale');
                 lyricsContainer.style.transform = 'translateY(0)';
-                document.querySelectorAll('.lyrics li').forEach(li => li.classList.remove('highlight'));
+                document.querySelectorAll('.lyrics li').forEach(li => li.classList.remove('highlight', 'next', 'prev'));
             }
 
             function startPlayback() {
