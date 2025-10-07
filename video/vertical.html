@@ -17,13 +17,8 @@
             --custom-light: #f0d858;
         }
 
-        @font-face {
-            font-family: 'main';
-            src: url('pzg-kai.ttf') format('truetype');
-        }
-
         body {
-            font-family: 'main', sans-serif;
+            font-family: 'Source Han Serif SC';
             background: radial-gradient(circle at 30% 20%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 70% 80%, rgba(139, 115, 85, 0.08) 0%, transparent 50%),
                 linear-gradient(135deg, var(--bg-color) 0%, #1a1a1a 50%, #0d0d0d 100%);
@@ -76,11 +71,8 @@
             position: relative;
             border: 2px solid var(--custom-dark);
 
-            /* 卡牌动效初始状态 - 修改为8圈旋转 */
-            transform: scale(0.3) rotateY(-2880deg) rotateX(15deg);
-            opacity: 0;
-            transform-origin: center;
-            transition: all 2.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: scale(1);
+            opacity: 1;
         }
 
         /* 卡牌动效激活状态 */
@@ -99,27 +91,7 @@
                 0 0 200px rgba(212, 175, 55, 0.3);
         }
 
-        /* 巨大问号样式 - 使用浅色主题颜色 */
-        .question-mark {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 200px;
-            color: var(--custom-light);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: 10;
-            text-shadow:
-                0 0 30px rgba(240, 216, 88, 0.8),
-                0 0 60px rgba(240, 216, 88, 0.4),
-                2px 2px 4px rgba(0, 0, 0, 0.5);
-            pointer-events: none;
-        }
 
-        .question-mark.show {
-            opacity: 1;
-        }
 
         /* 装饰性边框 */
         .lyrics-container::before {
@@ -168,7 +140,7 @@
         .song-title {
             font-size: 2.2em;
             margin: 0.2em 0;
-            font-weight: normal;
+            font-weight: bold;
             color: var(--custom-light);
             text-shadow:
                 0 0 20px rgba(212, 175, 55, 0.4),
@@ -222,10 +194,9 @@
 
         .lyrics li.highlight {
             font-size: 28px;
-            line-height: 1.2em;
             color: var(--custom-light);
             opacity: 1;
-            /* font-weight: bold; */
+            font-weight: bold;
             text-shadow:
                 0 0 20px rgba(180, 180, 180, 0.8),
                 0 0 40px rgba(180, 180, 180, 0.4);
@@ -510,8 +481,6 @@
             <!-- 背景粒子效果 -->
             <div class="particles" id="particles"></div>
 
-            <!-- 巨大问号 - 在旋转动画时显示 -->
-            <div class="question-mark" id="questionMark">?</div>
         </div>
     </div>
 
@@ -622,37 +591,6 @@
                 }
             }
 
-            // 卡牌抽卡动效
-            function playCardAnimation() {
-                return new Promise((resolve) => {
-                    // 显示问号
-                    questionMark.classList.add('show');
-
-                    // 添加发光和动画类
-                    lyricsContainerEl.classList.add('card-animating');
-
-                    // 使用requestAnimationFrame确保类添加后再触发动画
-                    requestAnimationFrame(() => {
-                        lyricsContainerEl.classList.add('card-active');
-                    });
-
-                    // 动画完成后清理类并resolve
-                    setTimeout(() => {
-                        lyricsContainerEl.classList.remove('card-animating');
-                        // 隐藏问号
-                        questionMark.classList.remove('show');
-                        resolve();
-                    }, 2500); // 与CSS transition时间匹配
-                });
-            }
-
-            // 重置卡牌状态
-            function resetCardAnimation() {
-                lyricsContainerEl.classList.remove('card-active', 'card-animating');
-                // 同时隐藏问号
-                questionMark.classList.remove('show');
-            }
-
             // 更新背景颜色
             function updateBackgroundColor(darkColor, lightColor) {
                 document.documentElement.style.setProperty('--custom-dark', darkColor);
@@ -711,8 +649,6 @@
 
             // 带卡牌动效的播放启动函数
             async function startPlaybackWithCardAnimation() {
-                // 先播放卡牌动效
-                await playCardAnimation();
                 // 动效完成后开始播放
                 startPlayback();
             }
