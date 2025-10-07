@@ -17,8 +17,13 @@
             --custom-light: #f0d858;
         }
 
+        @font-face {
+            font-family: 'main';
+            src: url('pzg-kai.ttf') format('truetype');
+        }
+
         body {
-            font-family: 'Source Han Serif SC';
+            font-family: 'main', sans-serif;
             background: radial-gradient(circle at 30% 20%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 70% 80%, rgba(139, 115, 85, 0.08) 0%, transparent 50%),
                 linear-gradient(135deg, var(--bg-color) 0%, #1a1a1a 50%, #0d0d0d 100%);
@@ -163,7 +168,7 @@
         .song-title {
             font-size: 2.2em;
             margin: 0.2em 0;
-            font-weight: bold;
+            font-weight: normal;
             color: var(--custom-light);
             text-shadow:
                 0 0 20px rgba(212, 175, 55, 0.4),
@@ -217,9 +222,10 @@
 
         .lyrics li.highlight {
             font-size: 28px;
+            line-height: 1.2em;
             color: var(--custom-light);
             opacity: 1;
-            font-weight: bold;
+            /* font-weight: bold; */
             text-shadow:
                 0 0 20px rgba(180, 180, 180, 0.8),
                 0 0 40px rgba(180, 180, 180, 0.4);
