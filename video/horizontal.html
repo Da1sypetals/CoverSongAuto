@@ -10,8 +10,13 @@
             --bg-color: #121212;
         }
 
+        @font-face {
+            font-family: 'main';
+            src: url('fonts/pzg-kai.ttf') format('truetype');
+        }
+
         body {
-            font-family: "Source Han Serif SC";
+            font-family: 'main';
             background: linear-gradient(to bottom, var(--bg-color), #000000);
             color: #e0e0e0;
             display: flex;
@@ -117,7 +122,7 @@
         .song-title {
             font-size: 3em;
             margin: 0.5em 0 0.1em;
-            font-weight: bold;
+            font-weight: normal;
         }
 
         .song-singer,
@@ -151,7 +156,7 @@
 
         .lyrics li {
             padding: 15px 0;
-            font-size: 26px;
+            font-size: 32px;
             opacity: 0.5;
             transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
             transform: scale(0.9);
@@ -159,10 +164,9 @@
         }
 
         .lyrics li.highlight {
-            font-size: 32px;
+            font-size: 36px;
             color: #fff;
             opacity: 1;
-            font-weight: bold;
             transform: scale(1.1);
             text-shadow:
                 0 0 10px rgba(255, 255, 255, 0.4),
@@ -475,7 +479,7 @@
             let config = {};
             let lyricsContent = '';
             let lyrics = [];
-            let currentRpm = 5;
+            let currentRpm = 0;
 
             // Animation state variables
             let animationFrameId = null;
@@ -517,7 +521,7 @@
             // --- Core Functionality ---
 
             function setRpm(rpm) {
-                currentRpm = Math.max(1, Math.min(20, rpm));
+                currentRpm = Math.max(0, Math.min(20, rpm));
                 rpmDisplay.textContent = currentRpm;
             }
 
